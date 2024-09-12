@@ -193,13 +193,26 @@ def train_save_model(project_id: str, location: str, source_table_path: str, mod
 
     return model_path
 
+@component(packages_to_install=["confluent-kafka"])
+def publish_to_kafka(kafka_config: dict, topic: str, message: str):
+    from confluent_kafka import Producer
+
+    def delivery_report(err, msg):
+        if err is not None:
+            print('Message delivery failed:', err)
+        else:
+            print('Message delivered to topic', msg.topic(), 'partition', msg.partition())
+
+    producer = Producer(kafka_config)
+    producer.produce(topic, value=message, callback=delivery_report)
+    producer.flush()
 
 @pipeline(
     name="my-basic-pipeline",
     description="This is a basic pipeline",
     pipeline_root="gs://vertexai-demo-pipeline/pipeline_root",
 )
-def my_pipeline(project_id: str, location: str, source_table_path: str):
+def my_pipeline(project_id: str, location: str, source_table_path: str, kafka_broker: str, kafka_topic: str):
     job_run_id = dsl.PIPELINE_JOB_ID_PLACEHOLDER
 
     prepare_dataset_task = prepare_dataset(
@@ -231,6 +244,25 @@ def my_pipeline(project_id: str, location: str, source_table_path: str):
         source_table_path=features_table,
         model_name="taxi_fare_model",
         staging_bucket="gs://vertexai-demo-pipeline"
+    )
+
+    model_path = train_save_model_task.output
+    
+    message = f"Model {model_path} has been trained and saved to Vertex AI registry."
+    publish_to_kafka_task = publish_to_kafka(
+        kafka_config={
+            'bootstrap.servers': kafka_broker,
+            'security.protocol': 'PLAINTEXT',
+            #'security.protocol': 'SSL',
+            #'ssl.ca.location': '',
+            #'ssl.certificate.location': '',
+            #'ssl.key.location': '',
+            #'ssl.key.password': '',
+            #'ssl.endpoint.identification.algorithm': 'HTTPS',
+            #'acks': '1'
+        },
+        topic=kafka_topic,
+        message=message
     )
 
 compiler.Compiler().compile(pipeline_func=my_pipeline, package_path="my_pipeline.json")

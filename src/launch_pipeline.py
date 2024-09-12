@@ -7,6 +7,8 @@ project = os.getenv("PROJECT_ID")
 location = os.getenv("LOCATION")
 source_table_path = os.getenv("SOURCE_TABLE_PATH")
 service_account = os.getenv("SERVICE_ACCOUNT")
+kafka_broker = os.getenv("KAFKA_BROKER")
+kafka_topic = os.getenv("KAFKA_TOPIC")
 
 init(project=project, location=location)
 
@@ -17,6 +19,8 @@ job = pipeline_jobs.PipelineJob(
         'project_id': project,
         'location': location,
         'source_table_path': source_table_path,
+        'kafka_broker': kafka_broker,
+        'kafka_topic': kafka_topic
     },
     project=project,
     enable_caching=False
