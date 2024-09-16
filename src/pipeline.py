@@ -1,6 +1,6 @@
 from typing import NamedTuple
 from kfp.dsl import component, pipeline
-from kfp import compiler, dsl
+from kfp import dsl
 
 
 @component(
@@ -207,12 +207,14 @@ def publish_to_kafka(kafka_config: dict, topic: str, message: str):
     producer.produce(topic, value=message, callback=delivery_report)
     producer.flush()
 
-@pipeline(
-    name="my-basic-pipeline",
-    description="This is a basic pipeline",
-    pipeline_root="gs://vertexai-demo-pipeline/pipeline_root",
-)
-def my_pipeline(project_id: str, location: str, source_table_path: str, kafka_broker: str, kafka_topic: str):
+#@pipeline(
+#    name="my-basic-pipeline",
+#    description="This is a basic pipeline",
+#    pipeline_root="gs://vertexai-demo-pipeline/pipeline_root",
+#)
+
+@pipeline
+def my_pipeline(project_id: str, location: str, pipeline_bucket:str, source_table_path: str, kafka_broker: str, kafka_topic: str):
     job_run_id = dsl.PIPELINE_JOB_ID_PLACEHOLDER
 
     prepare_dataset_task = prepare_dataset(
@@ -243,11 +245,11 @@ def my_pipeline(project_id: str, location: str, source_table_path: str, kafka_br
         location=location,
         source_table_path=features_table,
         model_name="taxi_fare_model",
-        staging_bucket="gs://vertexai-demo-pipeline"
+        staging_bucket=f"gs://{pipeline_bucket}/models"
     )
 
     model_path = train_save_model_task.output
-    
+
     message = f"Model {model_path} has been trained and saved to Vertex AI registry."
     publish_to_kafka_task = publish_to_kafka(
         kafka_config={
@@ -265,4 +267,3 @@ def my_pipeline(project_id: str, location: str, source_table_path: str, kafka_br
         message=message
     )
 
-compiler.Compiler().compile(pipeline_func=my_pipeline, package_path="my_pipeline.json")

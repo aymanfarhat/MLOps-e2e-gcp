@@ -22,9 +22,30 @@ KAFKA_TOPIC="test-topic"
 ```
 
 ### Generate a new pipeline snapshot
-Run `python src/pipeline.py`. This will generate a .json file definition of the pipeline which can then be executed either via the UI or via a script.
+Run `python src/compile_pipeline.py`. This will generate a .json file definition of the pipeline which can then be executed either via the UI or via a script.
 
 ### Launch the pipeline
 Run `python src/launch_pipeline.py`
 
-Note: the `launch_pipeline.py` script assumes that `my_pipeline.json` exists in the src directory. You can modify the code to change it to whatever you prefer. 
+Note: the `launch_pipeline.py` script assumes that `my_pipeline.json` exists in the src directory. You can modify the code to change it to whatever you prefer and to a different location.
+
+
+## Service account roles and permissions
+
+The service account used to run the pipeline must have the following roles:
+
+- Browser
+- BigQuery Connection Admin
+- BigQuery Data Editor
+- BigQuery Data Viewer
+- BigQuery Job User
+- BigQuery Read Session User
+- Cloud Functions Developer
+- Service Account User
+- Storage Object Admin
+- Vertex AI Feature Store Data Writer
+- Vertex AI Feature Store Instance Creator
+- Vertex AI User
+
+
+The above roles can be added to the service account via the GCP console or via the command line using the `gcloud` CLI. More granular permissions can be assigned as needed as well.
